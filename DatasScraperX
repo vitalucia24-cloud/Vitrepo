@@ -1,0 +1,55 @@
+‎import streamlit as st
+‎from bs4 import BeautifulSoup
+‎import requests
+‎import pandas as pd
+‎from openai import OpenAI
+‎
+‎# Initialize OpenAI API
+‎openai = OpenAI(api_key="YOUR_API_KEY")
+‎
+‎# Function to scrape website
+‎def scrape_website(url):
+‎    response = requests.get(url)
+‎    soup = BeautifulSoup(response.content, 'html.parser')
+‎    # Extract relevant data
+‎    data = []
+‎    for item in soup.find_all('div', {'class': 'relevant-class'}):
+‎        data.append(item.text.strip())
+‎    return data
+‎
+‎# Function to export data
+‎def export_data(data, format):
+‎    if format == 'csv':
+‎        return pd.DataFrame(data).to_csv(index=False)
+‎    elif format == 'json':
+‎        return pd.DataFrame(data).to_json(orient='records')
+‎
+‎# Streamlit app
+‎st.title("Web Scraping Tool with AI Chatbot")
+‎
+‎# Tab 1: Web Scraping
+‎with st.tab("Web Scraping"):
+‎    url = st.text_input("Enter website URL")
+‎    if st.button("Scrape"):
+‎        data = scrape_website(url)
+‎        st.write(pd.DataFrame(data))
+‎
+‎# Tab 2: Data Export
+‎with st.tab("Data Export"):
+‎    format = st.selectbox("Select format", ["csv", "json"])
+‎    if st.button("Export"):
+‎        data = pd.DataFrame(st.session_state.data)
+‎        st.download_button("Download", export_data(data, format), file_name=f"data.{format}")
+‎
+‎# Tab 3: AI Chatbot
+‎with st.tab("AI Chatbot"):
+‎    query = st.text_input("Ask a question about the scraped data")
+‎    if st.button("Ask"):
+‎        response = openai.chat.completions.create(
+‎            model="gpt-4",
+‎            messages=[{"role": "user", "content": query}],
+‎            max_tokens=2048,
+‎            temperature=0.7,
+‎        )
+‎        st.write(response.choices[0].message.content)
+‎
